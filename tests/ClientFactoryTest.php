@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Inboxcom\Mailcore\Cli\Tests;
 
+use GuzzleHttp\Client as GuzzleClient;
 use Inboxcom\Mailcore\Cli\ClientFactory;
+use Inboxcom\Mailcore\Http\Transport;
 use Inboxcom\Mailcore\MailcoreClient;
 use PHPUnit\Framework\TestCase;
 
@@ -12,6 +14,8 @@ final class ClientFactoryTest extends TestCase
 {
     private ?string $apiKey = null;
     private ?string $baseUri = null;
+    private ?string $timeout = null;
+    private ?string $connectTimeout = null;
     private string $missingConfig = '/nonexistent/mailcore/config.ini';
 
     /** @var list<string> */
@@ -22,14 +26,20 @@ final class ClientFactoryTest extends TestCase
         // Preserve the ambient environment so the suite stays order-independent.
         $this->apiKey = getenv('MAILCORE_API_KEY') ?: null;
         $this->baseUri = getenv('MAILCORE_BASE_URI') ?: null;
+        $this->timeout = getenv('MAILCORE_TIMEOUT') ?: null;
+        $this->connectTimeout = getenv('MAILCORE_CONNECT_TIMEOUT') ?: null;
         putenv('MAILCORE_API_KEY');
         putenv('MAILCORE_BASE_URI');
+        putenv('MAILCORE_TIMEOUT');
+        putenv('MAILCORE_CONNECT_TIMEOUT');
     }
 
     protected function tearDown(): void
     {
         $this->restore('MAILCORE_API_KEY', $this->apiKey);
         $this->restore('MAILCORE_BASE_URI', $this->baseUri);
+        $this->restore('MAILCORE_TIMEOUT', $this->timeout);
+        $this->restore('MAILCORE_CONNECT_TIMEOUT', $this->connectTimeout);
         foreach ($this->tempFiles as $file) {
             @unlink($file);
         }
@@ -90,6 +100,51 @@ final class ClientFactoryTest extends TestCase
         } finally {
             $this->restore('XDG_CONFIG_HOME', $xdg);
         }
+    }
+
+    public function testTimeoutsDefaultWhenUnset(): void
+    {
+        $config = self::guzzleConfig(ClientFactory::create($this->writeConfig('api_key = "k"')));
+
+        self::assertSame(MailcoreClient::DEFAULT_TIMEOUT, $config['timeout']);
+        self::assertSame(MailcoreClient::DEFAULT_CONNECT_TIMEOUT, $config['connect_timeout']);
+    }
+
+    public function testTimeoutsReadFromConfigFile(): void
+    {
+        $config = self::guzzleConfig(ClientFactory::create($this->writeConfig(<<<INI
+            api_key         = "k"
+            timeout         = 45
+            connect_timeout = 4
+            INI)));
+
+        self::assertSame(45.0, $config['timeout']);
+        self::assertSame(4.0, $config['connect_timeout']);
+    }
+
+    public function testTimeoutEnvOverridesConfigFile(): void
+    {
+        putenv('MAILCORE_TIMEOUT=12.5');
+        $config = self::guzzleConfig(ClientFactory::create($this->writeConfig(<<<INI
+            api_key = "k"
+            timeout = 99
+            INI)));
+
+        self::assertSame(12.5, $config['timeout']);
+    }
+
+    /** @return array<string, mixed> The default Guzzle client's merged config. */
+    private static function guzzleConfig(MailcoreClient $client): array
+    {
+        $transport = (new \ReflectionProperty(MailcoreClient::class, 'transport'))->getValue($client);
+        \assert($transport instanceof Transport);
+        $http = (new \ReflectionProperty(Transport::class, 'httpClient'))->getValue($transport);
+        self::assertInstanceOf(GuzzleClient::class, $http);
+
+        /** @var array<string, mixed> $config */
+        $config = (new \ReflectionProperty(GuzzleClient::class, 'config'))->getValue($http);
+
+        return $config;
     }
 
     private function writeConfig(string $contents): string

@@ -16,8 +16,13 @@ use Inboxcom\Mailcore\MailcoreClient;
  *
  * The config file is a flat INI document:
  *
- *   api_key  = "your-api-key"
- *   base_uri = "https://api.example.com"
+ *   api_key         = "your-api-key"
+ *   base_uri        = "https://api.example.com"
+ *   timeout         = 30
+ *   connect_timeout = 10
+ *
+ * Timeouts are in seconds (0 disables); they fall back to the client defaults.
+ * The matching env overrides are MAILCORE_TIMEOUT / MAILCORE_CONNECT_TIMEOUT.
  *
  * Credentials are never taken from CLI flags, so the API key stays out of shell
  * history and `ps` output.
@@ -44,7 +49,12 @@ final class ClientFactory
 
         $baseUri = self::env('MAILCORE_BASE_URI') ?? self::stringOrNull($config['base_uri'] ?? null);
 
-        return new MailcoreClient($apiKey, $baseUri ?? MailcoreClient::DEFAULT_BASE_URI);
+        return new MailcoreClient(
+            $apiKey,
+            $baseUri ?? MailcoreClient::DEFAULT_BASE_URI,
+            timeout: self::seconds('MAILCORE_TIMEOUT', $config['timeout'] ?? null, MailcoreClient::DEFAULT_TIMEOUT),
+            connectTimeout: self::seconds('MAILCORE_CONNECT_TIMEOUT', $config['connect_timeout'] ?? null, MailcoreClient::DEFAULT_CONNECT_TIMEOUT),
+        );
     }
 
     /** Default config path: $XDG_CONFIG_HOME/mailcore/config.ini, falling back to ~/.config. */
@@ -85,5 +95,23 @@ final class ClientFactory
     private static function stringOrNull(mixed $value): ?string
     {
         return is_string($value) && trim($value) !== '' ? $value : null;
+    }
+
+    /**
+     * Resolve a timeout (seconds): env var first, else the config value, else the
+     * default. Non-numeric values are ignored so a malformed entry can't break the
+     * client — it just falls back.
+     */
+    private static function seconds(string $envName, mixed $configValue, float $default): float
+    {
+        $env = self::env($envName);
+        if ($env !== null && is_numeric($env)) {
+            return (float) $env;
+        }
+        if (is_numeric($configValue)) {
+            return (float) $configValue;
+        }
+
+        return $default;
     }
 }

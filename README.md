@@ -56,9 +56,13 @@ Credentials are resolved in this order (first non-empty wins):
 
 ```ini
 ; ~/.config/mailcore/config.ini   (see config.ini.example)
-api_key  = "your-api-key"
-base_uri = "https://api.example.com"   ; optional
+api_key         = "your-api-key"
+base_uri        = "https://api.example.com"   ; optional
+timeout         = 30   ; optional, seconds (0 disables); raise for large data dumps
+connect_timeout = 10   ; optional, seconds (0 disables)
 ```
+
+The timeouts also accept env overrides `MAILCORE_TIMEOUT` / `MAILCORE_CONNECT_TIMEOUT`.
 
 ```bash
 mkdir -p ~/.config/mailcore
