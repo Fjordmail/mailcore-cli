@@ -42,7 +42,7 @@ mailcore users:new-password new@example.com    # prompts for the password
 mailcore domains:list
 mailcore mailboxplans:list
 mailcore mailfilter:rbl-lookup 8.8.8.8         # exit 1 if listed
-mailcore mailfilter:cdl-lookup 8.8.8.8         # exit 1 if listed
+mailcore mailfilter:cdl-lookup 8.8.8.8         # exit 1 if listed; --email= is informational
 mailcore datadump:fetch --output=dump.pgp
 ```
 

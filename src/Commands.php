@@ -590,10 +590,12 @@ final class Commands
                     return $listed ? Command::FAILURE : Command::SUCCESS;
                 }),
 
-            new ApiCommand('mailfilter:cdl-lookup', 'Look up an IPv4 address against the CDL', [['ip', true, 'IPv4 address']], [],
+            new ApiCommand('mailfilter:cdl-lookup', 'Look up an IPv4 address against the CDL', [['ip', true, 'IPv4 address']],
+                [['email', 'value', 'E-mail address recorded by Mailcore for informational purposes only']],
                 static function (InputInterface $in, SymfonyStyle $io, MailcoreClient $c): int {
                     $ip = (string) $in->getArgument('ip');
-                    $listed = $c->mailfilter()->isListedOnCdl($ip);
+                    $email = $in->getOption('email');
+                    $listed = $c->mailfilter()->isListedOnCdl($ip, $email !== null ? (string) $email : null);
                     $io->writeln($listed
                         ? sprintf('<comment>%s is LISTED on the CDL.</comment>', $ip)
                         : sprintf('<info>%s is clean.</info>', $ip));
