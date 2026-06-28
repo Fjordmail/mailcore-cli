@@ -104,6 +104,16 @@ final class CommandBehaviorTest extends CommandTestCase
         self::assertStringContainsString('LISTED', $tester->getDisplay());
     }
 
+    public function testCdlLookupReturnsFailureExitCodeWhenListed(): void
+    {
+        $tester = $this->tester('mailfilter:cdl-lookup', self::error(409, '[ip] was found listed on CDL'));
+
+        $tester->execute(['ip' => '8.8.8.8']);
+
+        self::assertSame(Command::FAILURE, $tester->getStatusCode());
+        self::assertStringContainsString('LISTED', $tester->getDisplay());
+    }
+
     public function testLogLoginRejectsInvalidServiceWithoutCallingApi(): void
     {
         $tester = $this->tester('users:log-login', self::json(null));
