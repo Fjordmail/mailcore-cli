@@ -1,0 +1,25 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Inboxcom\Mailcore\Cli\Application;
+
+// Composer injects this into bin proxies and it survives symlinked (path-repo)
+// installs, so it is the most reliable source. Fall back to the usual locations
+// for direct execution of this file.
+if (isset($_composer_autoload_path)) {
+    require $_composer_autoload_path;
+} else {
+    foreach ([
+        __DIR__ . '/../../../autoload.php',   // installed inside someone else's vendor/
+        __DIR__ . '/../vendor/autoload.php',  // standalone install of this package
+    ] as $autoload) {
+        if (is_file($autoload)) {
+            require $autoload;
+            break;
+        }
+    }
+}
+
+exit((new Application())->run());
