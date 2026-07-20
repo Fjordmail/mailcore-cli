@@ -682,7 +682,10 @@ final class Commands
     private static function display(mixed $value): string
     {
         if (is_array($value)) {
-            return $value === [] ? '—' : implode(', ', array_map(static fn ($v): string => (string) $v, $value));
+            // One item per line: a long array (e.g. password_changes) joined onto a
+            // single line blows the definition-list column out to the full width and
+            // wrecks the whole table's alignment.
+            return $value === [] ? '—' : implode("\n", array_map(static fn ($v): string => (string) $v, $value));
         }
 
         return ($value === null || $value === '') ? '—' : (string) $value;

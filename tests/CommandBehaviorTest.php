@@ -42,6 +42,28 @@ final class CommandBehaviorTest extends CommandTestCase
         self::assertSame(['user' => 'holger.demo.test@example.com'], $this->http->lastQuery());
     }
 
+    public function testUsersGetRendersLongArrayOnePerLine(): void
+    {
+        // A long array (e.g. password_changes) must render one entry per line, not
+        // comma-joined onto a single cell — the latter blows the definition-list
+        // column out to the full width and wrecks the table's alignment.
+        $changes = ['2024-01-01T00:00:00Z', '2024-02-02T00:00:00Z', '2024-03-03T00:00:00Z'];
+        $tester = $this->tester('users:get', self::json([
+            'active' => 1,
+            'password_changes' => $changes,
+        ]));
+
+        $tester->execute(['email' => 'holger.demo.test@example.com']);
+
+        $tester->assertCommandIsSuccessful();
+        $display = $tester->getDisplay();
+        foreach ($changes as $ts) {
+            self::assertStringContainsString($ts, $display);
+        }
+        // Not collapsed onto one comma-joined line.
+        self::assertStringNotContainsString($changes[0] . ', ' . $changes[1], $display);
+    }
+
     public function testUsersAddWithPasswordOptionSendsExpectedRequest(): void
     {
         $tester = $this->tester('users:add', self::json(null));
