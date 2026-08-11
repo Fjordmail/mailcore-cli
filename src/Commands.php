@@ -337,13 +337,15 @@ final class Commands
                 ['password', 'value', 'Specific temporary password (otherwise generated)'],
             ], static function (InputInterface $in, SymfonyStyle $io, MailcoreClient $c): int {
                 $window = $in->getOption('time-window');
-                $c->users()->temporaryAccess(
+                $password = $c->users()->temporaryAccess(
                     (string) $in->getArgument('email'),
                     $window !== null ? (int) $window : null,
                     $in->getOption('password'),
                 );
 
-                return self::ok($io, sprintf('Temporary access set for %s.', $in->getArgument('email')));
+                // The API returns the temporary password (the one supplied, or a
+                // generated one) — surface it so the operator can use it.
+                return self::ok($io, sprintf('Temporary access set for %s. Password: %s', $in->getArgument('email'), $password));
             }),
 
             new ApiCommand('users:log-login', 'Record a login in the last-login table', [
