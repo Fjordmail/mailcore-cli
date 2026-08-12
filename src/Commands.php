@@ -584,12 +584,16 @@ final class Commands
             new ApiCommand('mailfilter:rbl-lookup', 'Look up an IPv4 address against the RBLs', [['ip', true, 'IPv4 address']], [],
                 static function (InputInterface $in, SymfonyStyle $io, MailcoreClient $c): int {
                     $ip = (string) $in->getArgument('ip');
-                    $listed = $c->mailfilter()->isListedOnRbl($ip);
-                    $io->writeln($listed
-                        ? sprintf('<comment>%s is LISTED on one or more RBLs.</comment>', $ip)
-                        : sprintf('<info>%s is clean.</info>', $ip));
+                    $result = $c->mailfilter()->rblLookup($ip);
+                    if (! $result->listed) {
+                        $io->writeln(sprintf('<info>%s is clean.</info>', $ip));
 
-                    return $listed ? Command::FAILURE : Command::SUCCESS;
+                        return Command::SUCCESS;
+                    }
+
+                    $io->writeln(sprintf('<comment>%s is LISTED on: %s</comment>', $ip, implode(', ', $result->listedOn())));
+
+                    return Command::FAILURE;
                 }),
 
             new ApiCommand('mailfilter:cdl-lookup', 'Look up an IPv4 address against the CDL', [['ip', true, 'IPv4 address']],
