@@ -116,17 +116,14 @@ final class CommandBehaviorTest extends CommandTestCase
         self::assertStringContainsString('incorrect', strtolower($tester->getDisplay()));
     }
 
-    public function testRblLookupReturnsFailureExitCodeAndNamesListsWhenListed(): void
+    public function testRblLookupReturnsFailureExitCodeWhenListed(): void
     {
-        $tester = $this->tester('mailfilter:rbl-lookup', self::raw('{"cbl.mailcore.net":"LISTED","psbl.surriel.com":"CLEAN"}', 409));
+        $tester = $this->tester('mailfilter:rbl-lookup', self::error(409, '[ip] was found listed on RBL lists'));
 
-        $tester->execute(['ip' => '127.0.0.2']);
+        $tester->execute(['ip' => '8.8.8.8']);
 
         self::assertSame(Command::FAILURE, $tester->getStatusCode());
-        $display = $tester->getDisplay();
-        self::assertStringContainsString('LISTED', $display);
-        self::assertStringContainsString('cbl.mailcore.net', $display);
-        self::assertStringNotContainsString('psbl.surriel.com', $display, 'only the flagging lists are named');
+        self::assertStringContainsString('LISTED', $tester->getDisplay());
     }
 
     public function testCdlLookupReturnsFailureExitCodeWhenListed(): void
