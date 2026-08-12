@@ -43,11 +43,11 @@ final class CatalogTest extends TestCase
             'datadump' => 1,
             'domains' => 5,
             'mailboxplans' => 1,
-            'mailfilter' => 12,
+            'mailfilter' => 13,
             'reports' => 1,
             'users' => 37,
         ], $counts);
-        self::assertSame(57, array_sum($counts));
+        self::assertSame(58, array_sum($counts));
     }
 
     public function testApplicationRegistersTheCatalogue(): void
@@ -57,6 +57,7 @@ final class CatalogTest extends TestCase
         self::assertTrue($app->has('users:list'));
         self::assertTrue($app->has('mailfilter:rbl-lookup'));
         self::assertTrue($app->has('mailfilter:cdl-lookup'));
+        self::assertTrue($app->has('mailfilter:bpl-lookup'));
         self::assertTrue($app->has('datadump:fetch'));
     }
 }

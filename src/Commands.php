@@ -604,6 +604,26 @@ final class Commands
 
                     return $listed ? Command::FAILURE : Command::SUCCESS;
                 }),
+
+            new ApiCommand('mailfilter:bpl-lookup', 'Look up an IPv4 address against the BPL', [['ip', true, 'IPv4 address']], [],
+                static function (InputInterface $in, SymfonyStyle $io, MailcoreClient $c): int {
+                    $ip = (string) $in->getArgument('ip');
+                    $listing = $c->mailfilter()->bplLookup($ip);
+                    if ($listing === null) {
+                        $io->writeln(sprintf('<info>%s is clean.</info>', $ip));
+
+                        return Command::SUCCESS;
+                    }
+
+                    $io->writeln(sprintf('<comment>%s is BLOCKED on the BPL.</comment>', $ip));
+                    $io->definitionList(
+                        ['Blocked at' => $listing->dateAdded ?? '—'],
+                        ['Abuse window' => $listing->timeframeMinutes !== null ? $listing->timeframeMinutes . ' min' : '—'],
+                        ['Sample usernames' => $listing->sampleUsernames === [] ? '—' : implode("\n", $listing->sampleUsernames)],
+                    );
+
+                    return Command::FAILURE;
+                }),
         ];
     }
 

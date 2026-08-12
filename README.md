@@ -43,6 +43,7 @@ mailcore domains:list
 mailcore mailboxplans:list
 mailcore mailfilter:rbl-lookup 8.8.8.8         # exit 1 if listed
 mailcore mailfilter:cdl-lookup 8.8.8.8         # exit 1 if listed; --email= is informational
+mailcore mailfilter:bpl-lookup 8.8.8.8         # exit 1 if bruteforce-blocked
 mailcore datadump:fetch --output=dump.pgp
 ```
 

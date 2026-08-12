@@ -47,4 +47,10 @@ abstract class CommandTestCase extends TestCase
     {
         return new Response($status, [], (string) json_encode(['statusmsg' => $statusmsg]));
     }
+
+    /** A response with a raw, verbatim body — e.g. an endpoint that returns data alongside a non-2xx status. */
+    protected static function raw(string $body, int $status = 200): Response
+    {
+        return new Response($status, [], $body);
+    }
 }

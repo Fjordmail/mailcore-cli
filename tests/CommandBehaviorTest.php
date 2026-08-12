@@ -136,6 +136,32 @@ final class CommandBehaviorTest extends CommandTestCase
         self::assertStringContainsString('LISTED', $tester->getDisplay());
     }
 
+    public function testBplLookupReturnsFailureExitCodeWhenListed(): void
+    {
+        $tester = $this->tester('mailfilter:bpl-lookup', self::error(409, 'Host found on BPL'));
+
+        $tester->execute(['ip' => '8.8.8.8']);
+
+        self::assertSame(Command::FAILURE, $tester->getStatusCode());
+        self::assertStringContainsString('BLOCKED', $tester->getDisplay());
+    }
+
+    public function testBplLookupRendersBlockDetails(): void
+    {
+        $body = '{"statusmsg":"Host found on BPL","date_added":"2026-08-11 20:43:43",'
+            . '"timeframe_min":30,"sample":["fischer10@indamail.hu","ogitrew@citromail.hu"]}';
+        $tester = $this->tester('mailfilter:bpl-lookup', self::raw($body, 409));
+
+        $tester->execute(['ip' => '1.0.210.163']);
+
+        self::assertSame(Command::FAILURE, $tester->getStatusCode());
+        $display = $tester->getDisplay();
+        self::assertStringContainsString('2026-08-11 20:43:43', $display);
+        self::assertStringContainsString('30 min', $display);
+        self::assertStringContainsString('fischer10@indamail.hu', $display);
+        self::assertStringContainsString('ogitrew@citromail.hu', $display);
+    }
+
     public function testLogLoginRejectsInvalidServiceWithoutCallingApi(): void
     {
         $tester = $this->tester('users:log-login', self::json(null));
